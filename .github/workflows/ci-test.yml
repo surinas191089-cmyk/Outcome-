@@ -1,18 +1,50 @@
-name: CI Test
+name: Build VIBE Android APK
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Marker
-        run: echo "GitHub Actions runner works"
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Restore Android project
+        run: |
+          cat vibe-build/source.00 vibe-build/source.01 vibe-build/source.02 vibe-build/source.03 vibe-build/source.04 vibe-build/source.05 vibe-build/source.06 > /tmp/vibe-source.b64
+          base64 -d /tmp/vibe-source.b64 > /tmp/vibe-source.tar.gz
+          mkdir -p vibe-android
+          tar -xzf /tmp/vibe-source.tar.gz -C vibe-android
+          test -f vibe-android/app/build.gradle
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build debug APK
+        working-directory: vibe-android
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Prepare install file
+        run: |
+          cp vibe-android/app/build/outputs/apk/debug/app-debug.apk VIBE-Teen-Video-Studio.apk
+          ls -lh VIBE-Teen-Video-Studio.apk
+          unzip -t VIBE-Teen-Video-Studio.apk
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VIBE-Teen-Video-Studio-Android
+          path: VIBE-Teen-Video-Studio.apk
+          if-no-files-found: error
+          retention-days: 7
