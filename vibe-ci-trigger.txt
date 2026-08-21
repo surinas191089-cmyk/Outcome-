@@ -1,1 +1,1 @@
-VIBE Android APK build probe
+VIBE Android APK final build
