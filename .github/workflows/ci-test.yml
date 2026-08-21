@@ -1,0 +1,22 @@
+name: CI Test
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write marker
+        run: |
+          date -u +%FT%TZ > ci-marker.txt
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- ci-marker.txt
+          git commit -m "ci: marker" || exit 0
+          git push
